@@ -1,7 +1,4 @@
-!pip install streamlit
-!pip install websocket-client
-!pip install numpy
-!pip install ta
+
 
 import streamlit as st
 import json
