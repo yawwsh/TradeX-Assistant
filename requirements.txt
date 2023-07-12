@@ -3,3 +3,4 @@ websocket==1.2.1
 websocket-client==1.2.1
 numpy==1.21.0
 ta==0.7.0
+click==7.1.2
