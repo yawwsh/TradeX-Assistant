@@ -12,7 +12,7 @@ except ImportError:
     subprocess.check_call(["pip", "install", "TA-Lib"])
 
 try:
-    import websocket
+    import websocket.client
 except ImportError:
     subprocess.check_call(["pip", "install", "websocket-client"])
 
