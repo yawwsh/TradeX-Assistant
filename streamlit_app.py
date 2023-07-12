@@ -1,7 +1,7 @@
 import streamlit as st
 import json
 import numpy as np
-import talib
+import ta
 import websocket
 import websocket.client
 
@@ -9,9 +9,9 @@ import websocket.client
 import subprocess
 
 try:
-    import talib
+    import ta
 except ImportError:
-    subprocess.check_call(["pip", "install", "TA-Lib"])
+    subprocess.check_call(["pip", "install", "ta"])
 
 try:
     import websocket
@@ -105,9 +105,9 @@ def run_trading_bot():
                 core_to_trade = False
 
             indicators = []
-            for method in talib.get_functions():
-                if method.startswith('CDL'):
-                    indicator = getattr(talib, method)(inputs)
+            for method in ta.trend.__dir__():
+                if method.startswith('cdl'):
+                    indicator = getattr(ta.trend, method)(inputs)
                     indicators.append(indicator[-1])
             av_indicator = np.mean(indicators)
             st.write(av_indicator)
