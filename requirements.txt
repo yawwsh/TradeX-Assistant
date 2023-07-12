@@ -1,3 +1,4 @@
 streamlit==0.86.0
 websocket-client==1.2.1
 numpy==1.21.0
+TA-Lib==0.4.21
