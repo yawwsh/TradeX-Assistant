@@ -1,7 +1,9 @@
 import streamlit as st
 import json
 import numpy as np
+import talib
 import websocket
+import websocket.client
 
 # Install necessary packages
 import subprocess
@@ -10,6 +12,11 @@ try:
     import talib
 except ImportError:
     subprocess.check_call(["pip", "install", "TA-Lib"])
+
+try:
+    import websocket
+except ImportError:
+    subprocess.check_call(["pip", "install", "websocket"])
 
 try:
     import websocket.client
