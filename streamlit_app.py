@@ -1,17 +1,16 @@
 import streamlit as st
 import json
 import numpy as np
-import ta
+import talib
 import websocket
-import websocket.client
 
 # Install necessary packages
 import subprocess
 
 try:
-    import ta
+    import talib
 except ImportError:
-    subprocess.check_call(["pip", "install", "ta"])
+    subprocess.check_call(["pip", "install", "talib-binary"])
 
 try:
     import websocket
@@ -19,14 +18,17 @@ except ImportError:
     subprocess.check_call(["pip", "install", "websocket"])
 
 try:
-    import websocket.client
-except ImportError:
-    subprocess.check_call(["pip", "install", "websocket-client"])
-
-try:
     import numpy
 except ImportError:
     subprocess.check_call(["pip", "install", "numpy"])
+
+try:
+    import ta
+except ImportError:
+    subprocess.check_call(["pip", "install", "ta"])
+
+# Rest of the code...
+
 
 # Trading Strategy Parameters
 amount = 1000
