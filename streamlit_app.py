@@ -5,7 +5,8 @@ import json
 import numpy as np
 import ta
 import websocket
-import websocket.client
+import websocket_client
+
 
 # Install necessary packages
 import subprocess
@@ -21,9 +22,10 @@ except ImportError:
     subprocess.check_call(["pip", "install", "websocket"])
 
 try:
-    import websocket.client
+    import websocket_client
 except ImportError:
     subprocess.check_call(["pip", "install", "websocket-client"])
+
 
 try:
     import numpy
