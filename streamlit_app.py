@@ -4,17 +4,6 @@ import numpy as np
 import talib
 import websocket
 
-# Install necessary packages
-!pip install websocket-client
-!pip install streamlit
-!wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
-!tar -xzvf ta-lib-0.4.0-src.tar.gz
-%cd ta-lib
-!./configure --prefix=/usr
-!make
-!make install
-!pip install Ta-Lib
-
 # Trading Strategy Parameters
 amount = 1000
 core_trade_amount = amount * 0.90
@@ -50,7 +39,6 @@ def sell(allocated_money, price):
     investment.append(-allocated_money)
     investment[-1] += investment[-2]
 
-@st.cache
 def run_trading_bot():
     cc = 'btcusd'
     interval = '1m'
