@@ -1,0 +1,4 @@
+streamlit==0.86.0
+websocket-client==1.2.1
+numpy==1.21.0
+talib==0.4.21
