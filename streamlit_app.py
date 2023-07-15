@@ -1,41 +1,67 @@
 import streamlit as st
 import pandas as pd
-import requests
-import time
+from statsmodels.tsa.arima.model import ARIMA
+import gdown
 
-# Define the trading strategy
-def buy_btc():
-  """Buys BTC if the price is above the moving average."""
-  price = get_btc_price()
-  moving_average = get_moving_average()
-  if price > moving_average:
-    st.write("Buying BTC!")
+# Function to load the dataset
+def load_dataset():
+    # Download the dataset from Google Drive
+    url = 'https://drive.google.com/uc?id=1JE9nCnPrrS7Y4jTwBov7G0DqGJkk-Go9'
+    output_path = 'dataset.csv'
+    gdown.download(url, output_path, quiet=False)
+    
+    # Load the downloaded dataset
+    dataset = pd.read_csv(output_path)
+    return dataset
 
-def sell_btc():
-  """Sells BTC if the price is below the moving average."""
-  price = get_btc_price()
-  moving_average = get_moving_average()
-  if price < moving_average:
-    st.write("Selling BTC!")
+# Function to train and make predictions using ARIMA model
+def run_arima(dataset, order):
+    # Splitting into train and test
+    to_row = int(len(dataset) * 0.9)
+    training = list(dataset[0:to_row]['Adj Close'])
+    testing = list(dataset[to_row:]['Adj Close'])
 
-# Get the current BTC price
-def get_btc_price():
-  response = requests.get("https://api.coinbase.com/v2/prices/BTC-USD/spot")
-  data = response.json()
-  return data["amount"]
+    # Making model
+    model_predictions = []
+    n_test_obser = len(testing)
 
-# Get the moving average
-def get_moving_average():
-  data = pd.read_csv("btc_price_data.csv")
-  moving_average = data["Close"].rolling(window=10).mean()
-  return moving_average[-1]
+    for i in range(n_test_obser):
+        model = ARIMA(training, order=order)
+        model_fit = model.fit()
+        output = model_fit.forecast()
+        yhat = output[0]
+        model_predictions.append(yhat)
+        actual_test_value = testing[i]
+        training.append(actual_test_value)
 
-# Create the Streamlit app
-st.title("BTC Trading Bot")
+    return model_predictions
 
-# Run the trading strategy
-if st.button("Buy BTC"):
-  buy_btc()
+def main():
+    # Load the dataset
+    dataset = load_dataset()
 
-if st.button("Sell BTC"):
-  sell_btc()
+    # Set up the sidebar and user input
+    st.sidebar.title("ARIMA Prediction")
+    st.sidebar.subheader("Choose ARIMA Order:")
+    p = st.sidebar.slider("p (AR Order)", 0, 10, 4)
+    d = st.sidebar.slider("d (Difference Order)", 0, 10, 1)
+    q = st.sidebar.slider("q (MA Order)", 0, 10, 0)
+
+    order = (p, d, q)
+
+    # Run ARIMA model and get predictions
+    predictions = run_arima(dataset, order)
+
+    # Display the predicted results
+    st.title("ARIMA Prediction")
+    st.subheader("User Input:")
+    st.write(f"AR Order (p): {p}")
+    st.write(f"Difference Order (d): {d}")
+    st.write(f"MA Order (q): {q}")
+
+    st.subheader("Predicted Results:")
+    for i, pred in enumerate(predictions):
+        st.write(f"Prediction {i+1}: {pred}")
+
+if __name__ == '__main__':
+    main()
