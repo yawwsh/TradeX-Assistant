@@ -19,14 +19,14 @@ def run_arima(model, p, d, q):
     return prediction
 
 def main():
-    st.title("ARIMA Prediction")
+    st.title("BTC Prediction Bot")
 
     st.write("User Input:")
     model_url = "https://drive.google.com/uc?id=1zSK5LCTB1NE1UIYyaNFuMnm6CHt9nl7i"
     model_path = "arima_model.pkl"
-    p = st.text_input("AR Order (p)", "4")
-    d = st.text_input("Difference Order (d)", "1")
-    q = st.text_input("MA Order (q)", "0")
+    p = st.text_input("AR Order (p) - No. of previous observations to consider", "4")
+    d = st.text_input("Difference Order (d)- NO of differencing operations", "1")
+    q = st.text_input("MA Order (q)- Moving Average", "0")
 
     if st.button("Run ARIMA"):
         try:
@@ -40,7 +40,11 @@ def main():
             prediction = run_arima(model, p, d, q)
             st.write(f"Prediction: {prediction}")
             
-            # Add your buy/sell recommendation logic here based on the prediction
+            latest_price =  # Set the latest price here
+            if prediction > latest_price:
+                st.write("Recommendation: Buy")
+            else:
+                st.write("Recommendation: Sell")
 
         except ValueError:
             st.write("Invalid input. Please enter integer values for AR Order, Difference Order, and MA Order.")
