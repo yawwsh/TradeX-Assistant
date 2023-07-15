@@ -42,15 +42,15 @@ def run_arima(dataset, p, d, q):
     return model_predictions[-1]
 
 def main():
-    st.title("BTC Prediction Bot")
+    st.title("ARIMA Prediction")
 
     dataset = load_dataset()
     df = preprocess_data(dataset)
 
     st.write("User Input:")
-    p = st.text_input("AR Order", "4", help="The number of lag observations to include in the model (Autoregressive order)")
-    d = st.text_input("Difference Order", "1", help="The number of times the raw observations are differenced (Differencing order)")
-    q = st.text_input("MA Order", "0", help="The size of the moving average window (Moving Average order)")
+    p = st.text_input("AR Order (p)", "4")
+    d = st.text_input("Difference Order (d)", "1")
+    q = st.text_input("MA Order (q)", "0")
 
     if st.button("Run ARIMA"):
         try:
@@ -69,7 +69,7 @@ def main():
                 st.write("Recommendation: Sell")
 
         except ValueError:
-            st.write("Invalid input. Please enter integer values for the AR Order, Difference Order, and MA Order.")
+            st.write("Invalid input. Please enter integer values for AR Order, Difference Order, and MA Order.")
 
 if __name__ == '__main__':
     main()
