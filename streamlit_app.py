@@ -39,10 +39,10 @@ def run_arima(dataset, p, d, q):
         actual_test_value = testing[i]
         training.append(actual_test_value)
 
-    return model_predictions
+    return model_predictions[-1]
 
 def main():
-    st.title("ARIMA Prediction")
+    st.title("BTC Prediction Bot")
 
     dataset = load_dataset()
     df = preprocess_data(dataset)
@@ -58,13 +58,12 @@ def main():
             d = int(d)
             q = int(q)
 
-            st.write("Predicted Results:")
-            model_predictions = run_arima(df, p, d, q)
-            for i, prediction in enumerate(model_predictions):
-                st.write(f"Prediction {i+1}: {prediction}")
+            st.write("Predicted Result:")
+            prediction = run_arima(df, p, d, q)
+            st.write(f"Prediction: {prediction}")
 
             latest_price = df.iloc[-1]['Adj Close']
-            if model_predictions[-1] > latest_price:
+            if prediction > latest_price:
                 st.write("Recommendation: Buy")
             else:
                 st.write("Recommendation: Sell")
