@@ -27,7 +27,7 @@ def main():
     p = st.text_input("AR Order (p) - No. of previous observations to consider", "4")
     d = st.text_input("Difference Order (d)- No of differencing operations", "1")
     q = st.text_input("MA Order (q)- Moving Average", "0")
-    Current BTC Price = st.number_input("Current BTC Price", value=50000)  # Set a default value if needed
+    Current_BTC_Price = st.number_input("Current_BTC_Price", value=50000)  # Set a default value if needed
 
     if st.button("Get prediction"):
         try:
@@ -41,7 +41,7 @@ def main():
             prediction = run_arima(model, p, d, q)
             st.write(f"Future Price Prediction: {prediction}")
 
-            if prediction > Current BTC Price:
+            if prediction > Current_BTC_Price:
                 st.write("Recommendation: Buy")
             else:
                 st.write("Recommendation: Sell")
