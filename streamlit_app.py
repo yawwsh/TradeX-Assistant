@@ -41,7 +41,7 @@ def main():
             prediction = run_arima(model, p, d, q)
             st.write(f"Future Price Prediction: {prediction}")
 
-            if prediction < latest_price:
+            if prediction > latest_price:
                 st.write("Recommendation: Buy")
             else:
                 st.write("Recommendation: Sell")
