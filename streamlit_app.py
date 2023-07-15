@@ -25,8 +25,9 @@ def main():
     model_url = "https://drive.google.com/uc?id=1zSK5LCTB1NE1UIYyaNFuMnm6CHt9nl7i"
     model_path = "arima_model.pkl"
     p = st.text_input("AR Order (p) - No. of previous observations to consider", "4")
-    d = st.text_input("Difference Order (d)- NO of differencing operations", "1")
+    d = st.text_input("Difference Order (d)- No of differencing operations", "1")
     q = st.text_input("MA Order (q)- Moving Average", "0")
+    latest_price = st.number_input("Latest Price", value=50000)  # Set a default value if needed
 
     if st.button("Run ARIMA"):
         try:
@@ -38,11 +39,8 @@ def main():
             model = load_model(model_path)
             st.write("Predicted Result:")
             prediction = run_arima(model, p, d, q)
-            st.write(f"Prediction: {prediction}")
-            
-            # Set the latest price here
-            latest_price = 50000  # Replace with the actual latest price
-            
+            st.write(f"Future Price Prediction: {prediction}")
+
             if prediction < latest_price:
                 st.write("Recommendation: Buy")
             else:
