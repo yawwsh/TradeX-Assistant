@@ -21,20 +21,25 @@ def run_arima(dataset, p, d, q):
     # Preprocess the dataset if required
     df = preprocess_data(dataset)
 
-    # Select a subset of the data for faster computation
-    df_subset = df.tail(1000)  # Adjust the number as per your needs
-
     # Splitting into train and test
-    to_row = int(len(df_subset) * 0.9)
-    training = list(df_subset[0:to_row]['Adj Close'])
-    testing = list(df_subset[to_row:]['Adj Close'])
+    to_row = int(len(df) * 0.9)
+    training = list(df[0:to_row]['Adj Close'])
+    testing = list(df[to_row:]['Adj Close'])
 
     # Making model
-    model = ARIMA(training, order=(p, d, q))
-    model_fit = model.fit()
-    output = model_fit.forecast(steps=1)
-    prediction = output[0][0]
-    return prediction
+    model_predictions = []
+    n_test_obser = len(testing)
+
+    for i in range(n_test_obser):
+        model = ARIMA(training, order=(p, d, q))
+        model_fit = model.fit()
+        output = model_fit.forecast(steps=1)
+        prediction = output[0][0]
+        model_predictions.append(prediction)
+        actual_test_value = testing[i]
+        training.append(actual_test_value)
+
+    return model_predictions[-1]
 
 def main():
     st.title("ARIMA Prediction")
