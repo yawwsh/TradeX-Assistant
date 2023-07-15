@@ -5,7 +5,8 @@ from statsmodels.tsa.arima.model import ARIMA
 
 @st.cache
 def load_dataset():
-    dataset = pd.read_csv("data.csv")
+    dataset_url = "https://drive.google.com/uc?id=1JE9nCnPrrS7Y4jTwBov7G0DqGJkk-Go9"
+    dataset = pd.read_csv(dataset_url)
     return dataset
 
 def preprocess_data(dataset):
@@ -41,7 +42,7 @@ def run_arima(dataset, p, d, q):
     return model_predictions
 
 def main():
-    st.title("BTC Prediction Bot")
+    st.title("ARIMA Prediction")
 
     dataset = load_dataset()
     df = preprocess_data(dataset)
@@ -59,9 +60,11 @@ def main():
 
             st.write("Predicted Results:")
             model_predictions = run_arima(df, p, d, q)
-            st.write(f"Prediction 1: {model_predictions[0]}")
+            for i, prediction in enumerate(model_predictions):
+                st.write(f"Prediction {i+1}: {prediction}")
 
-            if model_predictions[0] > df[-1]:
+            latest_price = df.iloc[-1]['Adj Close']
+            if model_predictions[-1] > latest_price:
                 st.write("Recommendation: Buy")
             else:
                 st.write("Recommendation: Sell")
