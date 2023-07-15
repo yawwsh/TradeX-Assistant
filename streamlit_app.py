@@ -40,7 +40,9 @@ def main():
             prediction = run_arima(model, p, d, q)
             st.write(f"Prediction: {prediction}")
             
-            latest_price =  # Set the latest price here
+            # Set the latest price here
+            latest_price = 50000  # Replace with the actual latest price
+            
             if prediction > latest_price:
                 st.write("Recommendation: Buy")
             else:
