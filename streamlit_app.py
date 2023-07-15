@@ -34,12 +34,12 @@ def run_arima(dataset, p, d, q):
         model = ARIMA(training, order=(p, d, q))
         model_fit = model.fit()
         output = model_fit.forecast(steps=1)
-        prediction = output[0][0]
+        prediction = output[0]
         model_predictions.append(prediction)
         actual_test_value = testing[i]
         training.append(actual_test_value)
 
-    return model_predictions[-1]
+    return model_predictions[-1][0]
 
 def main():
     st.title("ARIMA Prediction")
