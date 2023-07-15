@@ -1,53 +1,22 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
-from statsmodels.tsa.arima.model import ARIMA
+import pickle
+from statsmodels.tsa.arima.model import ARIMAResults
 
-@st.cache
-def load_dataset():
-    dataset_url = "https://drive.google.com/uc?id=1JE9nCnPrrS7Y4jTwBov7G0DqGJkk-Go9"
-    dataset = pd.read_csv(dataset_url)
-    return dataset
+def load_model(model_path):
+    with open(model_path, 'rb') as f:
+        model = pickle.load(f)
+    return model
 
-def preprocess_data(dataset):
-    # Perform any preprocessing steps here
-    # For example, converting the date column to datetime format, sorting the data, etc.
-    df = dataset.copy()
-    df['Date'] = pd.to_datetime(df['Date'])
-    df = df.sort_values('Date')
-    return df
-
-def run_arima(dataset, p, d, q):
-    # Preprocess the dataset if required
-    df = preprocess_data(dataset)
-
-    # Splitting into train and test
-    to_row = int(len(df) * 0.9)
-    training = list(df[0:to_row]['Adj Close'])
-    testing = list(df[to_row:]['Adj Close'])
-
-    # Making model
-    model_predictions = []
-    n_test_obser = len(testing)
-
-    for i in range(n_test_obser):
-        model = ARIMA(training, order=(p, d, q))
-        model_fit = model.fit()
-        output = model_fit.forecast(steps=1)
-        prediction = output[0]
-        model_predictions.append(prediction)
-        actual_test_value = testing[i]
-        training.append(actual_test_value)
-
-    return model_predictions[-1][0]
+def run_arima(model, p, d, q):
+    # Make predictions using the loaded model
+    prediction = model.forecast(steps=1)[0]
+    return prediction
 
 def main():
     st.title("ARIMA Prediction")
 
-    dataset = load_dataset()
-    df = preprocess_data(dataset)
-
     st.write("User Input:")
+    model_path = "https://drive.google.com/uc?id=1zSK5LCTB1NE1UIYyaNFuMnm6CHt9nl7i"
     p = st.text_input("AR Order (p)", "4")
     d = st.text_input("Difference Order (d)", "1")
     q = st.text_input("MA Order (q)", "0")
@@ -58,15 +27,12 @@ def main():
             d = int(d)
             q = int(q)
 
+            model = load_model(model_path)
             st.write("Predicted Result:")
-            prediction = run_arima(df, p, d, q)
+            prediction = run_arima(model, p, d, q)
             st.write(f"Prediction: {prediction}")
-
-            latest_price = df.iloc[-1]['Adj Close']
-            if prediction > latest_price:
-                st.write("Recommendation: Buy")
-            else:
-                st.write("Recommendation: Sell")
+            
+            # Add your buy/sell recommendation logic here based on the prediction
 
         except ValueError:
             st.write("Invalid input. Please enter integer values for AR Order, Difference Order, and MA Order.")
