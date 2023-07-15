@@ -1,21 +1,16 @@
 import streamlit as st
 import pandas as pd
 from statsmodels.tsa.arima.model import ARIMA
-import gdown
 
-# Function to load the dataset
-def load_dataset():
-    # Download the dataset from Google Drive
-    url = 'https://drive.google.com/uc?id=1JE9nCnPrrS7Y4jTwBov7G0DqGJkk-Go9'
-    output_path = 'dataset.csv'
-    gdown.download(url, output_path, quiet=False)
-    
-    # Load the downloaded dataset
-    dataset = pd.read_csv(output_path)
+@st.cache
+def load_data():
+    data_url = 'https://drive.google.com/file/d/1JE9nCnPrrS7Y4jTwBov7G0DqGJkk-Go9/view?usp=sharing'
+    file_id = data_url.split('/')[-2]
+    csv_url = f'https://drive.google.com/uc?id={file_id}'
+    dataset = pd.read_csv(csv_url)
     return dataset
 
-# Function to train and make predictions using ARIMA model
-def run_arima(dataset, order):
+def run_arima(dataset, p, d, q):
     # Splitting into train and test
     to_row = int(len(dataset) * 0.9)
     training = list(dataset[0:to_row]['Adj Close'])
@@ -26,7 +21,7 @@ def run_arima(dataset, order):
     n_test_obser = len(testing)
 
     for i in range(n_test_obser):
-        model = ARIMA(training, order=order)
+        model = ARIMA(training, order=(p, d, q))
         model_fit = model.fit()
         output = model_fit.forecast()
         yhat = output[0]
@@ -34,34 +29,20 @@ def run_arima(dataset, order):
         actual_test_value = testing[i]
         training.append(actual_test_value)
 
-    return model_predictions
-
 def main():
-    # Load the dataset
-    dataset = load_dataset()
-
-    # Set up the sidebar and user input
-    st.sidebar.title("ARIMA Prediction")
-    st.sidebar.subheader("Choose ARIMA Order:")
-    p = st.sidebar.slider("p (AR Order)", 0, 10, 4)
-    d = st.sidebar.slider("d (Difference Order)", 0, 10, 1)
-    q = st.sidebar.slider("q (MA Order)", 0, 10, 0)
-
-    order = (p, d, q)
-
-    # Run ARIMA model and get predictions
-    predictions = run_arima(dataset, order)
-
-    # Display the predicted results
     st.title("ARIMA Prediction")
-    st.subheader("User Input:")
-    st.write(f"AR Order (p): {p}")
-    st.write(f"Difference Order (d): {d}")
-    st.write(f"MA Order (q): {q}")
 
-    st.subheader("Predicted Results:")
-    for i, pred in enumerate(predictions):
-        st.write(f"Prediction {i+1}: {pred}")
+    dataset = load_data()
+
+    p = st.text_input("AR Order (p)", "4")
+    d = st.text_input("Difference Order (d)", "1")
+    q = st.text_input("MA Order (q)", "0")
+
+    if st.button("Run ARIMA"):
+        p = int(p)
+        d = int(d)
+        q = int(q)
+        run_arima(dataset, p, d, q)
 
 if __name__ == '__main__':
     main()
