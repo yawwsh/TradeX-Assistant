@@ -24,9 +24,9 @@ def main():
     st.write("User Input:")
     model_url = "https://drive.google.com/uc?id=1zSK5LCTB1NE1UIYyaNFuMnm6CHt9nl7i"
     model_path = "arima_model.pkl"
-    p = st.text_input("AR Order (p) - No. of previous observations to consider", "4")
-    d = st.text_input("Difference Order (d)- No of differencing operations", "1")
-    q = st.text_input("MA Order (q)- Moving Average", "0")
+    p = st.text_input("AR Order (p) - No. of previous observations to consider")
+    d = st.text_input("Difference Order (d)- No of differencing operations")
+    q = st.text_input("MA Order (q)- Moving Average")
     Current_BTC_Price = st.number_input("Current_BTC_Price", value=50000)  # Set a default value if needed
 
     if st.button("Get prediction"):
@@ -39,7 +39,7 @@ def main():
             model = load_model(model_path)
             st.write("Predicted Result:")
             prediction = run_arima(model, p, d, q)
-            st.write(f"Future Price Prediction: {prediction}")
+            st.write(f"Future Price Prediction for the day: {prediction}")
 
             if prediction > Current_BTC_Price:
                 st.write("Recommendation: Buy")
