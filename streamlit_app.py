@@ -27,7 +27,7 @@ def main():
     p = st.text_input("AR Order (p) - No. of previous observations to consider","4")
     d = st.text_input("Difference Order (d)- No of differencing operations","1")
     q = st.text_input("MA Order (q)- Moving Average","0")
-    Current_BTC_Price = st.number_input("Current_BTC_Price", value=50000)  # Set a default value if needed
+    Current_BTC_Price = st.number_input("Current_BTC_Price", value=33498.24)  # Set a default value if needed
 
 if st.button("Get prediction"):
     try:
