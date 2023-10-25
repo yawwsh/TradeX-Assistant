@@ -29,25 +29,29 @@ def main():
     q = st.text_input("MA Order (q)- Moving Average","0")
     Current_BTC_Price = st.number_input("Current_BTC_Price", value=50000)  # Set a default value if needed
 
-    if st.button("Get prediction"):
-        try:
-            p = int(p)
-            d = int(d)
-            q = int(q)
+if st.button("Get prediction"):
+    try:
+        p = int(p)
+        d = int(d)
+        q = int(q)
+        steps = 5  # Set the number of steps to forecast
 
-            download_file_from_url(model_url, model_path)
-            model = load_model(model_path)
-            st.write("Predicted Result:")
-            prediction = run_arima(model, p, d, q)
-            st.write(f"Future Price Prediction for the day: {prediction}")
+        download_file_from_url(model_url, model_path)
+        model = load_model(model_path)
+        st.write("Predicted Results:")
+        predictions = run_arima(model, p, d, q, steps)
+        for i, prediction in enumerate(predictions):
+            st.write(f"Future Price Prediction for day {i + 1}: {prediction}")
 
-            if prediction > Current_BTC_Price:
-                st.write("Recommendation: Buy")
-            else:
-                st.write("Recommendation: Sell")
+        last_prediction = predictions[-1]
 
-        except ValueError:
-            st.write("Invalid input. Please enter integer values for AR Order, Difference Order, and MA Order.")
+        if last_prediction > Current_BTC_Price:
+            st.write("Recommendation: Buy")
+        else:
+            st.write("Recommendation: Sell")
+
+    except ValueError:
+        st.write("Invalid input. Please enter integer values for AR Order, Difference Order, and MA Order.")
 
 if __name__ == '__main__':
     main()
