@@ -1,4 +1,6 @@
 streamlit
 pandas
-statsmodels
-gdown
+yfinance
+requests
+joblib
+scikit-learn
