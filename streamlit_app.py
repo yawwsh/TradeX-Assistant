@@ -1,54 +1,101 @@
 import streamlit as st
+import pandas as pd
+import yfinance as yf
 import requests
-import pickle
-from statsmodels.tsa.arima.model import ARIMAResults
+import joblib
+from io import BytesIO
 
-def download_file_from_url(url, destination):
-    response = requests.get(url)
-    with open(destination, 'wb') as f:
-        f.write(response.content)
+st.title('TradeX Assistant')
 
-def load_model(model_path):
-    with open(model_path, 'rb') as f:
-        model = pickle.load(f)
-    return model
+model_url = 'https://drive.google.com/uc?id=1zHBodohwciZEfrckOEZhAviUkVPzpzx-'
+response = requests.get(model_url)
+model_file = BytesIO(response.content)
+regression_model = joblib.load(model_file)
 
-def run_arima(model, p, d, q):
-    # Make predictions using the loaded model
-    prediction = model.forecast(steps=1)[0]
-    return prediction
+# Ask the user to select a currency
+selected_currency = st.selectbox('Select a currency to predict', ['BTC-USD', 'ETH-USD', 'LTC-USD'])
 
-def main():
-    st.title("BTC Prediction Bot")
+# Define dictionary to map currency symbols to full names
+currency_names = {
+    'BTC-USD': 'Bitcoin (BTC)',
+    'ETH-USD': 'Ethereum (ETH)',
+    'LTC-USD': 'Litecoin (LTC)'
+}
 
-    st.write("User Input:")
-    model_url = "https://drive.google.com/uc?id=1zSK5LCTB1NE1UIYyaNFuMnm6CHt9nl7i"
-    model_path = "arima_model.pkl"
+if selected_currency:
+    # Get today's date for year, month, and day
+    today = pd.Timestamp.today()
+    year, month, day = today.year, today.month, today.day
 
-    p = st.text_input("AR Order (p) - No. of previous observations to consider", "4")
-    d = st.text_input("Difference Order (d)- No of differencing operations", "1")
-    q = st.text_input("MA Order (q)- Moving Average", "0")
-    Current_BTC_Price = st.number_input("Current_BTC_Price", value=23694)  # Set a default value if needed
+    # Fetch the selected currency's data
+    currency_data = yf.Ticker(selected_currency)
+    currency_info = currency_data.history(period="1m")
 
-    if st.button("Get prediction"):
-        try:
-            p = int(p)
-            d = int(d)
-            q = int(q)
+    # Extract relevant data
+    opening_price = currency_info['Open'][0]
+    high_price = currency_info['High'][0]
+    low_price = currency_info['Low'][0]
+    adj_closing_price = currency_info['Close'][0]
+    vol = currency_info['Volume'][0]
 
-            download_file_from_url(model_url, model_path)
-            model = load_model(model_path)
-            st.write("Predicted Result:")
-            prediction = run_arima(model, p, d, q)
-            st.write(f"Future Price Prediction for the day: {prediction}")
+    user_data = {
+        'Open': opening_price,
+        'High': high_price,
+        'Low': low_price,
+        'Volume': vol,
+        'Adj Close': adj_closing_price,
+        'Year': year,
+        'Month': month,
+        'Day': day
+    }
 
-            if prediction > Current_BTC_Price:
-                st.write("Recommendation: Buy")
-            else:
-                st.write("Recommendation: Sell")
+    def predict_price():
+        predicted_close = regression_model.predict([[user_data['Open'], user_data['High'], user_data['Low'],
+                                                     user_data['Volume'], user_data['Year'], user_data['Month'],
+                                                     user_data['Day']]])
+        return predicted_close[0]
 
-        except ValueError:
-            st.write("Invalid input. Please enter integer values for AR Order, Difference Order, and MA Order.")
+    # Define trading strategy
+    def trading_strategy(predicted_price, current_price):
+        threshold = 0.02  # Adjust this threshold as needed
+        if predicted_price > current_price * (1 + threshold):
+            return 'buy'
+        elif predicted_price < current_price * (1 - threshold):
+            return 'sell'
+        else:
+            return 'hold'
 
-if __name__ == '__main__':
-    main()
+    # Main function to execute the trading bot
+    def main():
+        current_price = user_data['Adj Close']  # Use the user-input adjusted closing price
+
+        # Display fetched information
+        st.subheader(f'Information for {currency_names[selected_currency]} ({selected_currency}):')
+        st.write(f'Opening Price: {opening_price}')
+        st.write(f'High Price: {high_price}')
+        st.write(f'Low Price: {low_price}')
+        st.write(f'Adjusted Closing Price: {adj_closing_price}')
+        st.write(f'Volume: {vol}')
+
+        predicted_closing_price = predict_price()
+
+        # Apply trading strategy
+        decision = trading_strategy(predicted_closing_price, current_price)
+
+        # Display trading decision and reasoning
+        st.subheader(f'Trading Decision for {currency_names[selected_currency]} ({selected_currency}):')
+        st.write(f'Current Price: {current_price}')
+        st.write(f'Predicted Closing Price: {predicted_closing_price}')
+
+        if decision == 'buy':
+            st.write('Signal: BUY')
+            st.write('Reason: Predicted price is higher than current price by more than 2%.')
+        elif decision == 'sell':
+            st.write('Signal: SELL')
+            st.write('Reason: Predicted price is lower than current price by more than 2%.')
+        else:
+            st.write('Signal: HOLD')
+            st.write('Reason: Predicted price is within 2% of the current price.')
+
+    if __name__ == '__main__':
+        main()
