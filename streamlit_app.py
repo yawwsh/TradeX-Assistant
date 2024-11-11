@@ -1,101 +1,174 @@
 import streamlit as st
-import pandas as pd
 import yfinance as yf
-import requests
-import joblib
-from io import BytesIO
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
+from mplfinance.original_flavor import candlestick_ohlc
+import matplotlib.dates as mdates
+from statsmodels.tsa.arima.model import ARIMA
+from sklearn.linear_model import LinearRegression
 
-st.title('TradeX Assistant')
+# Function to fit the ARIMA model and predict future prices
+def predict_future(data, order, future_days):
+    model = ARIMA(data, order=order)
+    model_fit = model.fit()
+    forecast = model_fit.forecast(steps=future_days)
+    return forecast
 
-model_url = 'https://drive.google.com/uc?id=1zHBodohwciZEfrckOEZhAviUkVPzpzx-'
-response = requests.get(model_url)
-model_file = BytesIO(response.content)
-regression_model = joblib.load(model_file)
+# Function to calculate moving averages
+def calculate_sma(data, window):
+    return data.rolling(window=window).mean()
 
-# Ask the user to select a currency
-selected_currency = st.selectbox('Select a currency to predict', ['BTC-USD', 'ETH-USD', 'LTC-USD'])
+# Function to generate trading signals
+def generate_trading_signal(current_price, predicted_prices, threshold=0.02):
+    # Calculate average predicted price
+    avg_predicted_price = predicted_prices.mean()
+    price_change_percent = (avg_predicted_price - current_price) / current_price
+    
+    if price_change_percent > threshold:
+        return "BUY", price_change_percent
+    elif price_change_percent < -threshold:
+        return "SELL", price_change_percent
+    else:
+        return "HOLD", price_change_percent
 
-# Define dictionary to map currency symbols to full names
-currency_names = {
-    'BTC-USD': 'Bitcoin (BTC)',
-    'ETH-USD': 'Ethereum (ETH)',
-    'LTC-USD': 'Litecoin (LTC)'
-}
+def main():
+    st.set_page_config(page_title="Crypto Price Prediction", page_icon="📈", layout="wide")
 
-if selected_currency:
-    # Get today's date for year, month, and day
-    today = pd.Timestamp.today()
-    year, month, day = today.year, today.month, today.day
+    st.title("📊 Cryptocurrency Price Prediction")
+    st.write("""
+        Welcome to the Crypto Price Prediction app! You can select a cryptocurrency and predict future prices using historical data.
+        This tool fetches real-time data from the web and predicts future prices for various cryptocurrencies using ARIMA model.
+    """)
 
-    # Fetch the selected currency's data
-    currency_data = yf.Ticker(selected_currency)
-    currency_info = currency_data.history(period="1m")
+    # Select cryptocurrency
+    st.sidebar.header('User Input Parameters')
+    currencies = ['BTC-USD', 'ETH-USD', 'LTC-USD', 'XRP-USD', 'DOGE-USD']
+    selected_currency = st.sidebar.selectbox('Select Ticker Symbol', currencies)
 
-    # Extract relevant data
-    opening_price = currency_info['Open'][0]
-    high_price = currency_info['High'][0]
-    low_price = currency_info['Low'][0]
-    adj_closing_price = currency_info['Close'][0]
-    vol = currency_info['Volume'][0]
+    # Select date range
+    start_date = st.sidebar.date_input("Start Date", value=pd.to_datetime("2022-01-01"))
+    end_date = st.sidebar.date_input("End Date", value=pd.to_datetime("today"))
 
-    user_data = {
-        'Open': opening_price,
-        'High': high_price,
-        'Low': low_price,
-        'Volume': vol,
-        'Adj Close': adj_closing_price,
-        'Year': year,
-        'Month': month,
-        'Day': day
-    }
+    # Slider for SMA parameters
+    st.sidebar.subheader('SMA Parameters')
+    short_sma_window = st.sidebar.slider('Short SMA Window:', min_value=1, max_value=100, value=20)
+    long_sma_window = st.sidebar.slider('Long SMA Window:', min_value=1, max_value=200, value=50)
 
-    def predict_price():
-        predicted_close = regression_model.predict([[user_data['Open'], user_data['High'], user_data['Low'],
-                                                     user_data['Volume'], user_data['Year'], user_data['Month'],
-                                                     user_data['Day']]])
-        return predicted_close[0]
+    # Slider for prediction steps
+    prediction_steps = st.sidebar.slider('Prediction Steps (Days):', min_value=1, max_value=30, value=7)
 
-    # Define trading strategy
-    def trading_strategy(predicted_price, current_price):
-        threshold = 0.02  # Adjust this threshold as needed
-        if predicted_price > current_price * (1 + threshold):
-            return 'buy'
-        elif predicted_price < current_price * (1 - threshold):
-            return 'sell'
-        else:
-            return 'hold'
+    # Signal threshold
+    signal_threshold = st.sidebar.slider('Signal Threshold (%):', min_value=1, max_value=10, value=2) / 100
 
-    # Main function to execute the trading bot
-    def main():
-        current_price = user_data['Adj Close']  # Use the user-input adjusted closing price
+    # Fetch data from yfinance
+    data = yf.download(selected_currency, start=start_date, end=end_date, interval='1d')
 
-        # Display fetched information
-        st.subheader(f'Information for {currency_names[selected_currency]} ({selected_currency}):')
-        st.write(f'Opening Price: {opening_price}')
-        st.write(f'High Price: {high_price}')
-        st.write(f'Low Price: {low_price}')
-        st.write(f'Adjusted Closing Price: {adj_closing_price}')
-        st.write(f'Volume: {vol}')
+    if not data.empty:
+        # Display a preview of the data
+        st.subheader(f'Historical Data for {selected_currency}')
+        st.write(data.tail())
 
-        predicted_closing_price = predict_price()
+        # Calculate and plot moving averages
+        data['Short SMA'] = calculate_sma(data['Close'], short_sma_window)
+        data['Long SMA'] = calculate_sma(data['Close'], long_sma_window)
 
-        # Apply trading strategy
-        decision = trading_strategy(predicted_closing_price, current_price)
+        # Display historical data chart
+        st.subheader('Historical Price Data with SMAs')
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.plot(data.index, data['Close'], label='Close Price', color='blue', linewidth=2)
+        ax.plot(data.index, data['Short SMA'], label=f'Short SMA ({short_sma_window})', color='orange', linestyle='--')
+        ax.plot(data.index, data['Long SMA'], label=f'Long SMA ({long_sma_window})', color='green', linestyle='--')
+        plt.xlabel('Date')
+        plt.ylabel('Price (USD)')
+        plt.title(f'{selected_currency} Historical Price with SMAs')
+        plt.legend()
+        plt.grid(True)
+        st.pyplot(fig)
 
-        # Display trading decision and reasoning
-        st.subheader(f'Trading Decision for {currency_names[selected_currency]} ({selected_currency}):')
-        st.write(f'Current Price: {current_price}')
-        st.write(f'Predicted Closing Price: {predicted_closing_price}')
+        # Prepare data for prediction
+        model_data = data[['Close']].dropna()
+        model_data['Days'] = np.arange(len(model_data))
 
-        if decision == 'buy':
-            st.write('Signal: BUY')
-            st.write('Reason: Predicted price is higher than current price by more than 2%.')
-        elif decision == 'sell':
-            st.write('Signal: SELL')
-            st.write('Reason: Predicted price is lower than current price by more than 2%.')
-        else:
-            st.write('Signal: HOLD')
-            st.write('Reason: Predicted price is within 2% of the current price.')
+        # Fit Linear Regression model for prediction
+        lr_model = LinearRegression()
+        lr_model.fit(model_data['Days'].values.reshape(-1, 1), model_data['Close'].values)
 
-    if __name__ == '__main__':
-        main()
+        # Predict future prices
+        future_days = np.arange(len(model_data), len(model_data) + prediction_steps).reshape(-1, 1)
+        future_prices = lr_model.predict(future_days)
+
+        # Create a DataFrame for predicted prices
+        future_dates = pd.date_range(start=data.index[-1] + pd.Timedelta(days=1), periods=prediction_steps)
+        predicted_df = pd.DataFrame(future_prices, index=future_dates, columns=['Predicted Price'])
+
+        # Display predicted prices
+        st.subheader('Predicted Future Prices')
+        st.dataframe(predicted_df.style.format('${:.2f}'))
+
+        # Plot predicted prices on line graph
+        st.subheader(f"Price Prediction for the Next {prediction_steps} Days")
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.plot(data.index, data['Close'], label='Historical Price', color='blue', linewidth=2)
+        ax.plot(predicted_df.index, predicted_df['Predicted Price'], label='Predicted Price', color='red', linestyle='--', linewidth=2)
+        plt.xlabel('Date')
+        plt.ylabel('Price (USD)')
+        plt.title(f'{selected_currency} Price Prediction for the Next {prediction_steps} Days')
+        plt.legend()
+        plt.grid(True)
+        st.pyplot(fig)
+
+        # Generate and display trading signal
+        current_price = data['Close'].iloc[-1]
+        signal, price_change = generate_trading_signal(current_price, predicted_df['Predicted Price'], signal_threshold)
+        
+        st.subheader("Trading Signal Analysis")
+        
+        # Create three columns for the metrics
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric(
+                label="Current Price",
+                value=f"${current_price:.2f}"
+            )
+        
+        with col2:
+            st.metric(
+                label="Average Predicted Price",
+                value=f"${predicted_df['Predicted Price'].mean():.2f}",
+                delta=f"{price_change*100:.2f}%"
+            )
+        
+        with col3:
+            # Style the trading signal
+            signal_color = {
+                "BUY": "green",
+                "SELL": "red",
+                "HOLD": "orange"
+            }
+            st.markdown(
+                f"""
+                <div style="padding: 10px; border-radius: 5px; text-align: center; 
+                background-color: {signal_color[signal]}; color: white; font-size: 24px; 
+                font-weight: bold;">
+                    {signal}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+        # Footer
+        st.markdown("""---""")
+        st.markdown("""**Note:** The accuracy of the model may vary based on various factors including market conditions.
+        Trading signals are generated based on the predicted price movement and should not be considered as financial advice.
+        """, unsafe_allow_html=True)
+
+
+
+    else:
+        st.error("Failed to retrieve data. Please try again later.")
+
+if __name__ == "__main__":
+    main()
